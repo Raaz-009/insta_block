@@ -1,9 +1,185 @@
+
 import 'package:flutter/material.dart';
+
 import '../services/protection_service.dart';
 import '../widgets/reboot_ui.dart';
 import 'duration_screen.dart';
-class ChooseServiceScreen extends StatefulWidget {const ChooseServiceScreen({super.key});@override State<ChooseServiceScreen> createState()=>_ChooseServiceScreenState();}
-class _ChooseServiceScreenState extends State<ChooseServiceScreen>{List<Map<String,String>> apps=[];final Set<String> selected={};bool loading=true;String? error;
- @override void initState(){super.initState();_load();}
- Future<void> _load() async {try{final a=await protectionService.getInstalledApps();if(mounted)setState(()=>apps=a);}catch(e){error='Could not read installed apps. Please use the Android version of Reboot.';}if(mounted)setState(()=>loading=false);}
- @override Widget build(BuildContext context)=>RebootScaffold(child:Column(children:[Padding(padding:const EdgeInsets.fromLTRB(20,12,20,0),child:Row(children:[const RebootBackButton(),const SizedBox(width:14),const Text('Choose apps',style:TextStyle(fontSize:16,fontWeight:FontWeight.w800))])),Expanded(child:ListView(padding:const EdgeInsets.fromLTRB(22,30,22,28),children:[const RebootEyebrow('Step 1 of 3'),const SizedBox(height:13),const Text('What would you like to pause?',style:TextStyle(fontSize:30,height:1.1,fontWeight:FontWeight.w800,letterSpacing:-.9)),const SizedBox(height:12),const Text('Select the installed apps you want Reboot to block. You can choose more than one.',style:TextStyle(color:RebootColors.muted,fontSize:14,height:1.55)),const SizedBox(height:20),if(loading)const Center(child:CircularProgressIndicator()) else if(error!=null)Text(error!,style:const TextStyle(color:RebootColors.amber)) else ...apps.map((a){final pkg=a['packageName']!; final isOn=selected.contains(pkg);return Padding(padding:const EdgeInsets.only(bottom:8),child:RebootCard(padding:const EdgeInsets.symmetric(horizontal:14,vertical:10),child:CheckboxListTile(contentPadding:EdgeInsets.zero,value:isOn,activeColor:RebootColors.purple,title:Text(a['name']!,style:const TextStyle(fontWeight:FontWeight.w700)),subtitle:Text(pkg,style:const TextStyle(color:RebootColors.muted,fontSize:10)),onChanged:(v)=>setState(()=>v==true?selected.add(pkg):selected.remove(pkg))));}),const SizedBox(height:16),RebootPrimaryButton(label:'Continue (${selected.length} selected)',icon:Icons.arrow_forward_rounded,onPressed:selected.isEmpty?null:(){final chosen=apps.where((a)=>selected.contains(a['packageName'])).toList();Navigator.push(context,MaterialPageRoute(builder:(_)=>DurationScreen(serviceName:chosen.map((a)=>a['name']).join(', '),selectedApps:chosen)));}),const SizedBox(height:10),const Text('Reboot needs Android Accessibility permission to detect when a selected app opens. Blocking is best-effort and can be disabled in Android settings.',textAlign:TextAlign.center,style:TextStyle(color:RebootColors.muted,fontSize:11,height:1.5))]))]));}
+
+class ChooseServiceScreen extends StatefulWidget {
+  const ChooseServiceScreen({super.key});
+
+  @override
+  State<ChooseServiceScreen> createState() => _ChooseServiceScreenState();
+}
+
+class _ChooseServiceScreenState extends State<ChooseServiceScreen> {
+  List<Map<String, String>> apps = [];
+  final Set<String> selected = {};
+  bool loading = true;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final a = await protectionService.getInstalledApps();
+
+      if (mounted) {
+        setState(() => apps = a);
+      }
+    } catch (e) {
+      error =
+          'Could not read installed apps. Please use the Android version of Reboot.';
+    }
+
+    if (mounted) {
+      setState(() => loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RebootScaffold(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: Row(
+              children: [
+                const RebootBackButton(),
+                const SizedBox(width: 14),
+                const Text(
+                  'Choose apps',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(22, 30, 22, 28),
+              children: [
+                const RebootEyebrow('Step 1 of 3'),
+                const SizedBox(height: 13),
+                const Text(
+                  'What would you like to pause?',
+                  style: TextStyle(
+                    fontSize: 30,
+                    height: 1.1,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.9,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Select the installed apps you want Reboot to block. You can choose more than one.',
+                  style: TextStyle(
+                    color: RebootColors.muted,
+                    fontSize: 14,
+                    height: 1.55,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                if (loading)
+                  const Center(child: CircularProgressIndicator())
+                else if (error != null)
+                  Text(
+                    error!,
+                    style: const TextStyle(color: RebootColors.amber),
+                  )
+                else
+                  ...apps.map((app) {
+                    final pkg = app['packageName']!;
+                    final isOn = selected.contains(pkg);
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: RebootCard(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        child: CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          value: isOn,
+                          activeColor: RebootColors.purple,
+                          title: Text(
+                            app['name']!,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          subtitle: Text(
+                            pkg,
+                            style: const TextStyle(
+                              color: RebootColors.muted,
+                              fontSize: 10,
+                            ),
+                          ),
+                          onChanged: (value) {
+                            setState(() {
+                              if (value == true) {
+                                selected.add(pkg);
+                              } else {
+                                selected.remove(pkg);
+                              }
+                            });
+                          },
+                        ),
+                      ),
+                    );
+                  }),
+
+                const SizedBox(height: 16),
+                RebootPrimaryButton(
+                  label: 'Continue (${selected.length} selected)',
+                  icon: Icons.arrow_forward_rounded,
+                  onPressed: selected.isEmpty
+                      ? null
+                      : () {
+                          final chosen = apps
+                              .where(
+                                (app) =>
+                                    selected.contains(app['packageName']),
+                              )
+                              .toList();
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => DurationScreen(
+                                serviceName: chosen
+                                    .map((app) => app['name'])
+                                    .join(', '),
+                                selectedApps: chosen,
+                              ),
+                            ),
+                          );
+                        },
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Reboot needs Android Accessibility permission to detect when a selected app opens. Blocking is best-effort and can be disabled in Android settings.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: RebootColors.muted,
+                    fontSize: 11,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
