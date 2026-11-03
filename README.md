@@ -1,49 +1,25 @@
-# Reboot — Flutter + native Android protection
+# Reboot — Flutter + Android Accessibility blocking
 
-Reboot combines a commitment timer with Android-native Instagram app and website restrictions.
+This project uses Flutter for the app UI and a native Kotlin Android Accessibility Service for best-effort app and browser URL blocking. It does not use Android VpnService, DNS filtering, or a local VPN.
 
-## What is implemented
+## Features in this update
+- Select installed launcher apps to include in a commitment.
+- Persist a commitment expiry and selected package list on Android.
+- Detect selected app foreground events and show a Reboot pause screen.
+- Best-effort Instagram URL detection in Chrome, Samsung Internet, Firefox and Edge where URL text is exposed through Accessibility.
+- One emergency bypass per commitment, lasting five minutes. The original expiry timestamp continues unchanged.
+- Optional generated password protection. Passwords are encrypted with an Android Keystore AES-GCM key and are not written into the Flutter commitment JSON.
 
-- Flutter UI and commitment timer remain the app's user experience.
-- `LockManager` persists the commitment expiry and synchronizes the expiry timestamp with Android through `MethodChannel` (`com.reboot/blocking`).
-- `InstagramAccessibilityService` watches foreground-window/content events and redirects Instagram app launches (and supported browser views that expose an Instagram URL in accessibility text) to a Reboot pause screen.
-- `InstagramVpnService` creates a local Android VPN interface that routes the configured DNS endpoint through a small DNS proxy. It returns NXDOMAIN for Instagram domains and forwards other UDP DNS lookups to Cloudflare DNS. Its socket is protected from VPN routing to avoid a loop.
-- The VPN service is scheduled to stop at the saved commitment expiry. The accessibility service independently checks the same expiry before acting.
-- When the Flutter app starts, it reconciles native protection with the persisted active commitment.
+## Android setup
+1. Install the APK.
+2. Open Reboot settings and enable its Accessibility service in Android Settings.
+3. Create a commitment and select installed apps. Only one active commitment is allowed so the single emergency bypass maps unambiguously to that session.
+4. Test with a short commitment before relying on it.
 
-## Setup on an Android phone
+## Limitations
+Accessibility blocking is not tamper-proof. The user can disable the service, force-stop or uninstall Reboot, use another profile/device, or exploit OEM battery restrictions. Browser URL detection is best-effort: browsers may hide URL text, change their accessibility tree, or use in-app web views that are not supported. The service should be tested on the target Samsung model and Android version.
 
-1. Install the release APK.
-2. Open Reboot settings (the tune icon on Home) and tap **Enable app blocking**.
-3. In Android Accessibility settings, open **Downloaded apps / Installed apps → Reboot** and enable the service. Android will show its accessibility disclosure; approve only if you understand the permission.
-4. Return to Reboot and start a commitment. Android will ask to authorize Reboot's VPN connection. Approve it.
-5. Confirm the Android VPN key/status indicator is present. Test `instagram.com` in a supported browser and launch the Instagram app.
-6. Let a short test commitment expire and confirm the VPN indicator disappears and Instagram is accessible again.
+The five-minute bypass is stored in app-private preferences and is consumed once per active native session. The timer remains anchored to the persisted expiry timestamp.
 
-## Build APK
-
-The GitHub Actions workflow `.github/workflows/build-apk.yml` builds `app-release.apk` on pushes to `main` or via **Actions → Build Reboot APK → Run workflow**. Download the `reboot-android-apk` artifact after a successful run.
-
-## Important limitations
-
-- This is an Android-only personal-use implementation. The VPN permission is user-approved and Android may revoke/stop it; accessibility can be disabled by the user or restricted by OEM battery management.
-- DNS filtering blocks common Instagram hostnames when requests use the VPN-provided DNS server. It does not inspect HTTPS content and cannot guarantee blocking against DNS-over-HTTPS/DoT, another VPN, hard-coded IPs, proxy apps, or every browser configuration. Browser URL detection through accessibility is best-effort and browser-specific.
-- The current DNS proxy handles UDP DNS over IPv4. It is a deliberately narrow DNS filter, not a general-purpose VPN router. IPv6, TCP DNS, encrypted DNS, and unusual resolver behavior need device testing and further hardening.
-- The Accessibility API is powerful. Reboot uses it only to detect target app/browser foreground content and open its own pause screen; it does not read credentials or transmit accessibility content.
-- This build is not a tamper-proof parental-control / kiosk product. A user who controls the phone can disable permissions, uninstall Reboot, or use alternate network paths.
-- Existing VPN apps generally conflict with Reboot's local VPN because Android permits only one active VPN per user/profile.
-
-## Testing checklist
-
-- Grant accessibility before starting a session; verify `InstagramAccessibilityService` is enabled in Android settings.
-- Start a 1-day commitment and approve VPN; verify notification and VPN key.
-- Verify Instagram app foreground triggers Reboot pause screen.
-- Verify `instagram.com` and `www.instagram.com` fail to resolve in Chrome/Samsung Internet.
-- Verify unrelated domains still resolve.
-- Force-stop and reopen Reboot; confirm the same saved expiry remains enforced.
-- Reboot the phone and reopen Reboot; confirm Flutter reconciles active commitment and re-establishes VPN consent if Android requires it.
-- Wait for expiry; confirm service stops and Instagram works again.
-
-## Security follow-up
-
-The original app stores the reveal password in SharedPreferences. Before using real account passwords, migrate secrets to Android Keystore-backed encrypted storage (for example, `flutter_secure_storage`) and review backup/export behavior. Prefer a randomly generated password used only for the commitment, not a reused account password.
+## Build
+Use Flutter 3.13+ compatible with the project's Dart SDK constraint and run `flutter pub get`, then `flutter build apk --release`. This source archive has not been compiled or tested on a physical device in this environment.

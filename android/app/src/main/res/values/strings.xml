@@ -1,0 +1,1 @@
+<resources><string name="app_name">Reboot</string><string name="reboot_accessibility_description">Detects selected apps and supported browser URLs during a Reboot commitment so it can show a pause screen. Reboot does not read or transmit your messages or credentials.</string></resources>
